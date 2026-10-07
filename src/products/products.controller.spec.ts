@@ -10,7 +10,7 @@ import { ProductsRepository } from "./products.repository.js";
 describe("Products HTTP validation (isolated database)", () => {
   let app: INestApplication<App>;
   const id = "4691b0c6-f34b-4a77-8a65-ed7b80081f57";
-  const input = { nombre: "Teclado", precio: 19.99, stock: 4 };
+  const input = { nombre: "Teclado", precio: 19.99 };
   const repository = {
     create: vi.fn(),
     findAll: vi.fn(),
@@ -59,6 +59,7 @@ describe("Products HTTP validation (isolated database)", () => {
     { ...input, precio: null },
     { ...input, stock: -1 },
     { ...input, stock: 0.5 },
+    { ...input, stock: 0 },
     { ...input, descripcion: 1 },
     { ...input, extra: true },
     { ...input, id },
@@ -77,6 +78,7 @@ describe("Products HTTP validation (isolated database)", () => {
     {},
     { nombre: null },
     { stock: null },
+    { stock: 0 },
     { precio: null },
     { extra: true },
   ])("rechaza una actualización inválida (%#)", async (body) => {

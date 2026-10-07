@@ -35,7 +35,7 @@ describe("ProductsService", () => {
   it("crea y devuelve el producto persistido", async () => {
     repository.create.mockResolvedValue(product);
     await expect(
-      service.create({ nombre: "Teclado", precio: 10.5, stock: 2 }),
+      service.create({ nombre: "Teclado", precio: 10.5 }),
     ).resolves.toEqual(product);
   });
 
@@ -55,11 +55,11 @@ describe("ProductsService", () => {
     );
   });
 
-  it("actualiza precio y stock a cero", async () => {
-    repository.update.mockResolvedValue({ ...product, precio: 0, stock: 0 });
+  it("actualiza precio conservando el stock", async () => {
+    repository.update.mockResolvedValue({ ...product, precio: 0 });
     await expect(
-      service.update(product.id, { precio: 0, stock: 0 }),
-    ).resolves.toMatchObject({ precio: 0, stock: 0 });
+      service.update(product.id, { precio: 0 }),
+    ).resolves.toMatchObject({ precio: 0, stock: 2 });
   });
 
   it.each([
@@ -68,7 +68,6 @@ describe("ProductsService", () => {
       nombre: undefined,
       descripcion: undefined,
       precio: undefined,
-      stock: undefined,
     },
   ])("rechaza una actualización sin campos definidos", async (input) => {
     await expect(service.update(product.id, input)).rejects.toBeInstanceOf(
@@ -86,7 +85,7 @@ describe("ProductsService", () => {
 
   it("devuelve 404 al actualizar un producto inexistente", async () => {
     await expect(
-      service.update(product.id, { stock: 1 }),
+      service.update(product.id, { precio: 1 }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 

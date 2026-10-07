@@ -36,15 +36,14 @@ describe("ProductsRepository (Prisma)", () => {
   });
 
   it("devuelve el precio como número al crear y omite el ID del input", async () => {
-    model.create.mockResolvedValue(row);
+    model.create.mockResolvedValue({ ...row, stock: 0 });
     const product = await repository.create({
       nombre: "Teclado",
       precio: 19.99,
-      stock: 4,
     });
-    expect(product).toEqual({ ...row, precio: 19.99 });
+    expect(product).toEqual({ ...row, precio: 19.99, stock: 0 });
     expect(model.create).toHaveBeenCalledWith({
-      data: { nombre: "Teclado", descripcion: null, precio: 19.99, stock: 4 },
+      data: { nombre: "Teclado", descripcion: null, precio: 19.99, stock: 0 },
     });
   });
 
@@ -68,23 +67,21 @@ describe("ProductsRepository (Prisma)", () => {
     });
   });
 
-  it("omite campos undefined y conserva precio y stock cero en PATCH", async () => {
+  it("omite campos undefined y no modifica stock en PATCH", async () => {
     model.update.mockResolvedValue({
       ...row,
       precio: new Prisma.Decimal(0),
-      stock: 0,
     });
     await expect(
       repository.update(row.id, {
         nombre: undefined,
         descripcion: undefined,
         precio: 0,
-        stock: 0,
       }),
-    ).resolves.toEqual({ ...row, precio: 0, stock: 0 });
+    ).resolves.toEqual({ ...row, precio: 0 });
     expect(model.update).toHaveBeenCalledWith({
       where: { id: row.id },
-      data: { precio: 0, stock: 0 },
+      data: { precio: 0 },
     });
   });
 
@@ -102,7 +99,7 @@ describe("ProductsRepository (Prisma)", () => {
   it("traduce P2025 al resultado de producto inexistente en actualización", async () => {
     model.update.mockRejectedValue(missing);
     await expect(
-      repository.update(row.id, { stock: 1 }),
+      repository.update(row.id, { precio: 1 }),
     ).resolves.toBeUndefined();
   });
 
@@ -126,7 +123,7 @@ describe("ProductsRepository (Prisma)", () => {
     );
     model.update.mockRejectedValue(error);
     model.delete.mockRejectedValue(error);
-    await expect(repository.update(row.id, { stock: 1 })).rejects.toBe(error);
+    await expect(repository.update(row.id, { precio: 1 })).rejects.toBe(error);
     await expect(repository.remove(row.id)).rejects.toBe(error);
   });
 

@@ -83,7 +83,8 @@ printing them. Keep `.env` private.
 The prepared migration creates `products` and `app_products_migrations` in the
 configured database. Migration `001-products` was authorized and applied to the
 existing local `productos` database. It does not run at application startup.
-To apply the same migration to another explicitly authorized database, run from `server/`:
+The runner now also includes pending `002-inventory`; authorization is required before
+running it against the real database. From `server/`, after authorization:
 
 ```bash
 npm run db:migrate
@@ -107,17 +108,58 @@ Prepared create payload:
 {
   "nombre": "Teclado",
   "descripcion": "USB",
-  "precio": 19.99,
-  "stock": 4
+  "precio": 19.99
 }
 ```
 
-The ID is generated as UUID v4. PATCH accepts any subset of the four fields,
+The ID is generated as UUID v4 and products start with stock zero. PATCH accepts any subset
+of nombre, descripcion and precio,
 requires at least one field and preserves omitted values; `descripcion: null`
 clears the description. Unknown properties and invalid UUIDs produce 400.
-Missing products produce 404. Price and stock must be JSON numbers.
-The proposed validation rules and pending decisions are documented in
-[the product domain](../docs/dominios/productos.md).
+Missing products produce 404. Price must be a JSON number. The stock field remains in
+responses but is managed exclusively by inventory: including stock in POST or PATCH
+returns 400. Consumers that previously wrote stock through products must use movements.
+
+## Inventory
+
+Inventory reuses products.stock as the only current quantity. Availability equals that
+quantity; there are no reservations or multiple warehouses in this scope.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/inventory` | List available quantities |
+| GET | `/inventory/:id` | Get product quantity and availability |
+| GET | `/inventory/:id/movements` | Read movement history |
+| POST | `/inventory/:id/movements` | Register an entry, exit or adjustment |
+
+Example entry payload (use a new UUID for each new operation):
+
+```json
+{
+  "idOperacion": "b832cfa1-6017-497c-872c-536591591bcb",
+  "tipo": "entrada",
+  "cantidad": 5,
+  "motivo": "Recepción de mercadería",
+  "responsable": "operador"
+}
+```
+
+`entrada` adds quantity; `salida` subtracts it; `ajuste` sets the absolute quantity.
+Entries and exits require a positive integer; adjustments allow zero. The maximum stock
+is 2147483647. Insufficient stock, overflow and reusing an operation ID with different
+data return 409. Retrying the same ID and payload returns the recorded movement without
+changing stock again. Concurrent conflicts are retried up to five times; if exhausted,
+503 indicates that the caller can retry with the same operation ID.
+
+Each movement records previous/new stock, product ID/name, timestamp, reason and declared
+operator. Operator is supplied by the caller; this feature adds no authentication.
+Prisma updates stock and records the movement in one serializable transaction.
+The history is retained even if the product is deleted, and cannot be edited through
+the API. Existing balances are preserved; movements before enabling inventory are not
+reconstructed. UUIDs and request bodies are validated before writes.
+
+Migration `002-inventory` creates only the movement table and its index. It is prepared
+and tested in an isolated schema but has not been applied to the real database.
 
 Unit and isolated HTTP tests do not need PostgreSQL. The E2E suite requires
 PostgreSQL and permission to create a separate random `products_test_*` schema

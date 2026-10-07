@@ -18,3 +18,19 @@ model Product {
 
   @@map("products")
 }
+
+model InventoryMovement {
+  id             String   @id @db.Uuid
+  productoId     String   @db.Uuid
+  nombreProducto String   @db.VarChar(200)
+  tipo           String   @db.VarChar(10)
+  cantidad       Int
+  stockAnterior  Int
+  stockPosterior Int
+  motivo         String   @db.VarChar(500)
+  responsable    String   @db.VarChar(120)
+  creadoEn       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([productoId, creadoEn])
+  @@map("inventory_movements")
+}

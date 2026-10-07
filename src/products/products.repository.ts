@@ -29,7 +29,7 @@ export class ProductsRepository {
         nombre: input.nombre,
         descripcion: input.descripcion ?? null,
         precio: input.precio,
-        stock: input.stock,
+        stock: 0,
       },
     });
     return toProduct(product);
@@ -56,7 +56,6 @@ export class ProductsRepository {
         ? { descripcion: input.descripcion }
         : {}),
       ...(input.precio !== undefined ? { precio: input.precio } : {}),
-      ...(input.stock !== undefined ? { stock: input.stock } : {}),
     };
     try {
       const product = await this.database.client.product.update({

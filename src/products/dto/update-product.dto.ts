@@ -1,6 +1,5 @@
 import { Transform } from "class-transformer";
 import {
-  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -32,10 +31,4 @@ export class UpdateProductDto implements UpdateProduct {
   @Min(0)
   @Max(9999999999.99)
   precio?: number;
-
-  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
-  @IsInt()
-  @Min(0)
-  @Max(2147483647)
-  stock?: number;
 }

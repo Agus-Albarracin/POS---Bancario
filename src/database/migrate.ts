@@ -14,20 +14,22 @@ export async function migrate(pool: Pool): Promise<void> {
       id TEXT PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
-    const applied = await client.query(
-      "SELECT id FROM app_products_migrations WHERE id = $1",
-      ["001-products"],
-    );
-    if (applied.rowCount === 0) {
-      const sql = await readFile(
-        new URL("../../migrations/001-products.sql", import.meta.url),
-        "utf8",
+    for (const migration of ["001-products", "002-inventory"]) {
+      const applied = await client.query(
+        "SELECT id FROM app_products_migrations WHERE id = $1",
+        [migration],
       );
-      await client.query(sql);
-      await client.query(
-        "INSERT INTO app_products_migrations (id) VALUES ($1)",
-        ["001-products"],
-      );
+      if (applied.rowCount === 0) {
+        const sql = await readFile(
+          new URL(`../../migrations/${migration}.sql`, import.meta.url),
+          "utf8",
+        );
+        await client.query(sql);
+        await client.query(
+          "INSERT INTO app_products_migrations (id) VALUES ($1)",
+          [migration],
+        );
+      }
     }
     await client.query("COMMIT");
   } catch (error) {
