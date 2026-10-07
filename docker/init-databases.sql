@@ -1,0 +1,1 @@
+-- Compatibility placeholder for the existing container mount. No databases or tables are created here.
